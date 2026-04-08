@@ -37,7 +37,7 @@ export async function clearEmployerMappings() {
 // -- Salary type mappings --
 
 export type SalaryTypeMapping = {
-  id?: number;
+  id?: string;
   source_code: string;
   target_loennsart: string;
   rate?: string;
