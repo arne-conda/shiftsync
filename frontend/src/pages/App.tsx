@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { toast } from "sonner";
 import { format, startOfMonth, endOfMonth, setDate } from "date-fns";
 import {
@@ -12,6 +12,8 @@ import {
   downloadCsv,
   saveManualMapping,
   clearEmployerMappings,
+  saveRun,
+  searchEmployers,
   type WorkerSummary,
   type PreviewResponse,
 } from "@/lib/api";
@@ -85,6 +87,65 @@ function Btn({
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 function formatDateDMY(d: Date) { return format(d, "dd/MM/yyyy"); }
+
+function EmployeeSearchInput({
+  value, onChange,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const [query, setQuery] = useState(value);
+  const [results, setResults] = useState<{ normalized_name: string; lonnstakernr: string }[]>([]);
+  const [open, setOpen] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleInput(q: string) {
+    setQuery(q);
+    onChange(q);
+    if (timer.current) clearTimeout(timer.current);
+    if (!q.trim()) { setResults([]); setOpen(false); return; }
+    timer.current = setTimeout(async () => {
+      try {
+        const res = await searchEmployers(q);
+        setResults(res);
+        setOpen(res.length > 0);
+      } catch {}
+    }, 300);
+  }
+
+  function select(item: { normalized_name: string; lonnstakernr: string }) {
+    setQuery(item.lonnstakernr);
+    onChange(item.lonnstakernr);
+    setOpen(false);
+  }
+
+  return (
+    <div className="relative flex-1">
+      <input
+        type="text"
+        placeholder="Søk navn eller skriv lønnstakernr"
+        value={query}
+        onChange={e => handleInput(e.target.value)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        className="border rounded-lg px-3 py-1.5 text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+      />
+      {open && (
+        <div className="absolute z-10 top-full left-0 right-0 mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-y-auto">
+          {results.map(r => (
+            <button
+              key={r.lonnstakernr}
+              onMouseDown={() => select(r)}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 flex justify-between items-center gap-2"
+            >
+              <span className="text-gray-700 truncate">{r.normalized_name}</span>
+              <span className="text-xs text-gray-400 flex-shrink-0">{r.lonnstakernr}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── main component ───────────────────────────────────────────────────────────
 export default function App() {
@@ -191,12 +252,21 @@ export default function App() {
     setDownloading(true);
     try {
       const blob = await downloadCsv(quinyxFile, employeeType, fradato, tildato);
+      const csvContent = await blob.text();
+
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
       a.download = `importlonn_tripletex_${fradato.replace(/\//g, "-")}.csv`;
       a.click();
       URL.revokeObjectURL(url);
+
+      if (preview) {
+        const employeeCount = new Set(preview.items.map(i => i.lonnstakernr)).size;
+        const rowCount = csvContent.split("\n").filter(l => l.trim()).length - 1;
+        saveRun(employeeType, fradato, tildato, employeeCount, rowCount, csvContent).catch(() => {});
+      }
+
       toast.success("CSV lastet ned.");
     } catch (e: any) {
       toast.error(e.message);
@@ -224,6 +294,14 @@ export default function App() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900">ShiftSync</h1>
           <p className="text-gray-500 mt-1">Quinyx → Tripletex lønnsimport</p>
+          <div className="flex justify-center gap-2 mt-4">
+            <a href="/mappings" className="px-4 py-1.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+              Lønnstype-mapping
+            </a>
+            <a href="/logg" className="px-4 py-1.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition">
+              Kjøringslogg
+            </a>
+          </div>
         </div>
 
         {/* Step 1 */}
@@ -323,12 +401,9 @@ export default function App() {
                 {unmappedNames.map((name) => (
                   <div key={name} className="flex items-center gap-3">
                     <span className="text-sm text-gray-700 w-48 truncate">{name}</span>
-                    <input
-                      type="text"
-                      placeholder="Lønnstakernr"
+                    <EmployeeSearchInput
                       value={manualMappings[name] ?? ""}
-                      onChange={(e) => setManualMappings(p => ({ ...p, [name]: e.target.value }))}
-                      className="border rounded-lg px-3 py-1.5 text-sm flex-1 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      onChange={(val) => setManualMappings(p => ({ ...p, [name]: val }))}
                     />
                   </div>
                 ))}
