@@ -48,7 +48,7 @@ export async function getSalaryTypeMappings(employeeType: string) {
   const res = await request(`/api/salary-types/${employeeType}`);
   return res.json() as Promise<{
     employee_type: string;
-    mappings: (SalaryTypeMapping & { id: number })[];
+    mappings: (SalaryTypeMapping & { id: string })[];
   }>;
 }
 
