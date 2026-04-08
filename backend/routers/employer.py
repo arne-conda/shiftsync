@@ -1,7 +1,7 @@
 import io
 import re
 import pandas as pd
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional
 from db import get_db
@@ -107,6 +107,18 @@ def get_mappings():
     result = db.table("employer_mappings").select("normalized_name, lonnstakernr").execute()
     items = [MappingItem(**r) for r in result.data]
     return MappingsResponse(mappings=items, count=len(items))
+
+
+@router.get("/search")
+def search_mappings(q: str = Query(..., description="Partial match on lonnstakernr or normalized_name")):
+    """Search employer mappings by lonnstakernr or name (case insensitive, partial)."""
+    db = get_db()
+    term = q.strip().lower()
+    result = db.table("employer_mappings") \
+        .select("normalized_name, lonnstakernr") \
+        .or_(f"normalized_name.ilike.%{term}%,lonnstakernr.ilike.%{term}%") \
+        .execute()
+    return result.data
 
 
 @router.delete("/mappings")
