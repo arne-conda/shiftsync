@@ -230,7 +230,7 @@ export default function App() {
         <Card>
           <StepHeader step={1} title="Last opp employer-fil" color="bg-orange-500" icon={Users} />
           <p className="text-sm text-gray-500 mb-4">
-            Excel/CSV med Lønnstakernr (kol B), Fornavn (kol F), Etternavn (kol G). Data fra rad 3.
+            Excel/CSV med Lønnstakernr (kolonne B), Fornavn (kolonne F), Etternavn (kolonne G). Data fra rad 3.
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <FilePickerButton
