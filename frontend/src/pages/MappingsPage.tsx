@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Save, Loader2 } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, Map, ArrowLeft, History } from "lucide-react";
 import { getSalaryTypeMappings, saveSalaryTypeMappings, type SalaryTypeMapping } from "@/lib/api";
 
 type Row = SalaryTypeMapping & { id: string };
@@ -54,23 +54,49 @@ export default function MappingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Lønnstype-mapping</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Koble Quinyx-koder til Tripletex lønnsarter og satser.
-          </p>
+    <div className="min-h-screen bg-slate-50">
+
+      {/* Navbar */}
+      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-slate-200">
+        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <a href="/" className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition">
+              <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs font-bold">S</span>
+              </div>
+              <span className="font-semibold text-slate-900 text-sm">ShiftSync</span>
+            </a>
+            <span className="text-slate-300">/</span>
+            <div className="flex items-center gap-1.5 text-sm text-slate-500">
+              <Map className="w-3.5 h-3.5" /> Lønnstype-mapping
+            </div>
+          </div>
+          <nav className="flex items-center gap-0.5">
+            <a href="/" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition">
+              <ArrowLeft className="w-3.5 h-3.5" /> Tilbake
+            </a>
+            <a href="/logg" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition">
+              <History className="w-3.5 h-3.5" /> Kjøringslogg
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 pt-10 pb-16">
+
+        <div className="mb-8">
+          <h1 className="text-xl font-semibold text-slate-900">Lønnstype-mapping</h1>
+          <p className="text-sm text-slate-400 mt-0.5">Koble Quinyx-koder til Tripletex lønnsarter og satser.</p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        {/* Tab toggle */}
+        <div className="flex gap-1 bg-slate-100 rounded-xl p-1 w-fit mb-6">
           {(["driver", "warehouse"] as const).map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-5 py-2 rounded-xl text-sm font-medium transition ${
-                tab === t ? "bg-blue-600 text-white" : "bg-white text-gray-600 border hover:bg-gray-50"
+              className={`px-5 py-1.5 rounded-lg text-sm font-medium transition ${
+                tab === t ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"
               }`}
             >
               {t === "driver" ? "Sjåfører" : "Lager"}
@@ -78,59 +104,70 @@ export default function MappingsPage() {
           ))}
         </div>
 
-        <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center py-16 text-gray-400">
-              <Loader2 className="w-6 h-6 animate-spin mr-2" /> Laster...
+            <div className="flex items-center justify-center py-20 text-slate-400">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" /> Laster...
             </div>
           ) : (
             <>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b">
+                  <thead className="bg-slate-50 border-b border-slate-100">
                     <tr>
                       {["Quinyx-kode", "Tripletex lønnsart", "Sats", "Kommentar", ""].map(h => (
-                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                        <th key={h} className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wide">
                           {h}
                         </th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-slate-50">
                     {rows.map(row => (
-                      <tr key={row.id} className="hover:bg-gray-50">
+                      <tr key={row.id} className="hover:bg-slate-50 group">
                         {(["source_code", "target_loennsart", "rate", "comment"] as const).map(field => (
                           <td key={field} className="px-4 py-2">
                             <input
                               value={row[field] ?? ""}
                               onChange={e => update(row.id, field, e.target.value)}
                               placeholder={field === "source_code" ? "1234" : field === "target_loennsart" ? "5678" : ""}
-                              className="w-full border-0 bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1 py-0.5"
+                              className="w-full bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-400 rounded px-1 py-0.5 text-slate-700 placeholder:text-slate-300"
                             />
                           </td>
                         ))}
                         <td className="px-4 py-2">
-                          <button onClick={() => setRows(r => r.filter(x => x.id !== row.id))}
-                            className="text-gray-300 hover:text-red-400 transition">
+                          <button
+                            onClick={() => setRows(r => r.filter(x => x.id !== row.id))}
+                            className="text-slate-200 hover:text-red-400 transition opacity-0 group-hover:opacity-100"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </td>
                       </tr>
                     ))}
                     {rows.length === 0 && (
-                      <tr><td colSpan={5} className="text-center py-10 text-gray-400">Ingen mappinger enda.</td></tr>
+                      <tr>
+                        <td colSpan={5} className="text-center py-14 text-slate-300 text-sm">
+                          Ingen mappinger enda.
+                        </td>
+                      </tr>
                     )}
                   </tbody>
                 </table>
               </div>
 
-              <div className="flex items-center justify-between px-4 py-3 border-t bg-gray-50">
-                <button onClick={() => setRows(r => [...r, newRow()])}
-                  className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
+              <div className="flex items-center justify-between px-4 py-3 border-t border-slate-100 bg-slate-50">
+                <button
+                  onClick={() => setRows(r => [...r, newRow()])}
+                  className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-medium transition"
+                >
                   <Plus className="w-4 h-4" /> Legg til rad
                 </button>
-                <button onClick={handleSave} disabled={saving}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm hover:bg-blue-700 disabled:opacity-50">
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-40 transition shadow-sm"
+                >
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                   Lagre mappinger
                 </button>
@@ -139,10 +176,7 @@ export default function MappingsPage() {
           )}
         </div>
 
-        <div className="mt-4 text-center">
-          <a href="/" className="text-sm text-gray-400 hover:text-gray-600">← Tilbake til hovedflyt</a>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

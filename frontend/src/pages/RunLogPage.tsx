@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, History, ArrowLeft, Map } from "lucide-react";
 import { getRunLog, downloadPreviousRun, type RunLogEntry } from "@/lib/api";
 
 export default function RunLogPage() {
@@ -40,52 +40,79 @@ export default function RunLogPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <a href="/" className="text-sm text-gray-400 hover:text-gray-600">← Tilbake til hovedflyt</a>
-          <h1 className="text-2xl font-bold text-gray-900 mt-3">Kjørelogg</h1>
-          <p className="text-gray-500 text-sm mt-1">Tidligere genererte Tripletex-filer.</p>
+    <div className="min-h-screen bg-slate-50">
+
+      {/* Navbar */}
+      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-sm border-b border-slate-200">
+        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <a href="/" className="flex items-center gap-2 text-slate-500 hover:text-slate-900 transition">
+              <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-xs font-bold">S</span>
+              </div>
+              <span className="font-semibold text-slate-900 text-sm">ShiftSync</span>
+            </a>
+            <span className="text-slate-300">/</span>
+            <div className="flex items-center gap-1.5 text-sm text-slate-500">
+              <History className="w-3.5 h-3.5" /> Kjøringslogg
+            </div>
+          </div>
+          <nav className="flex items-center gap-0.5">
+            <a href="/" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition">
+              <ArrowLeft className="w-3.5 h-3.5" /> Tilbake
+            </a>
+            <a href="/mappings" className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition">
+              <Map className="w-3.5 h-3.5" /> Lønnstype-mapping
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 pt-10 pb-16">
+
+        <div className="mb-8">
+          <h1 className="text-xl font-semibold text-slate-900">Kjøringslogg</h1>
+          <p className="text-sm text-slate-400 mt-0.5">Tidligere genererte Tripletex-filer.</p>
         </div>
 
-        <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           {loading ? (
-            <div className="flex items-center justify-center py-16 text-gray-400">
-              <Loader2 className="w-6 h-6 animate-spin mr-2" /> Laster...
+            <div className="flex items-center justify-center py-20 text-slate-400">
+              <Loader2 className="w-5 h-5 animate-spin mr-2" /> Laster...
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b">
+                <thead className="bg-slate-50 border-b border-slate-100">
                   <tr>
                     {["Dato", "Type", "Periode", "Ansatte", "Linjer", ""].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      <th key={h} className="px-4 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wide">
                         {h}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-slate-50">
                   {entries.map(entry => (
-                    <tr key={entry.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{formatDate(entry.created_at)}</td>
-                      <td className="px-4 py-3">
+                    <tr key={entry.id} className="hover:bg-slate-50">
+                      <td className="px-4 py-3.5 text-slate-600 whitespace-nowrap text-xs">{formatDate(entry.created_at)}</td>
+                      <td className="px-4 py-3.5">
                         <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
                           entry.employee_type === "driver"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-orange-100 text-orange-700"
+                            ? "bg-blue-50 text-blue-700"
+                            : "bg-amber-50 text-amber-700"
                         }`}>
                           {entry.employee_type === "driver" ? "Sjåfører" : "Lager"}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{entry.fradato} – {entry.tildato}</td>
-                      <td className="px-4 py-3 text-gray-700">{entry.employee_count}</td>
-                      <td className="px-4 py-3 text-gray-700">{entry.row_count}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3.5 text-slate-700 whitespace-nowrap text-sm">{entry.fradato} – {entry.tildato}</td>
+                      <td className="px-4 py-3.5 text-slate-600 text-sm">{entry.employee_count}</td>
+                      <td className="px-4 py-3.5 text-slate-600 text-sm">{entry.row_count}</td>
+                      <td className="px-4 py-3.5">
                         <button
                           onClick={() => handleDownload(entry)}
                           disabled={downloading === entry.id}
-                          className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-50 transition"
+                          className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 disabled:opacity-40 font-medium transition"
                         >
                           {downloading === entry.id
                             ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -97,7 +124,9 @@ export default function RunLogPage() {
                   ))}
                   {entries.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="text-center py-10 text-gray-400">Ingen kjøringer enda.</td>
+                      <td colSpan={6} className="text-center py-16 text-slate-300 text-sm">
+                        Ingen kjøringer enda.
+                      </td>
                     </tr>
                   )}
                 </tbody>
@@ -105,7 +134,8 @@ export default function RunLogPage() {
             </div>
           )}
         </div>
-      </div>
+
+      </main>
     </div>
   );
 }
