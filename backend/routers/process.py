@@ -2,7 +2,7 @@ import io
 import csv
 import re
 import pandas as pd
-from fastapi import APIRouter, UploadFile, File, Query, HTTPException
+from fastapi import APIRouter, UploadFile, File, Query, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional
@@ -316,11 +316,76 @@ async def download_csv(
             row["comment"],
         ])
 
-    output.seek(0)
+    csv_content = output.getvalue()
+
+    # Save to run_log
+    employee_count = len({item.lonnstakernr for item in preview.items})
+    row_count = len(agg)
+    db = get_db()
+    db.table("run_log").insert({
+        "employee_type": employee_type,
+        "fradato": fradato,
+        "tildato": tildato,
+        "employee_count": employee_count,
+        "row_count": row_count,
+        "csv_content": csv_content,
+    }).execute()
+
     return StreamingResponse(
-        iter([output.getvalue().encode("utf-8")]),
+        iter([csv_content.encode("utf-8")]),
         media_type="text/csv",
         headers={"Content-Disposition": "attachment; filename=importlonn_tripletex.csv"}
+    )
+
+
+@router.post("/save-run")
+async def save_run(
+    request: Request,
+    employee_type: str = Query(...),
+    fradato: str = Query(...),
+    tildato: str = Query(...),
+    employee_count: int = Query(...),
+    row_count: int = Query(...),
+):
+    """Save a run to run_log and return the saved row id."""
+    csv_content = (await request.body()).decode("utf-8")
+    db = get_db()
+    result = db.table("run_log").insert({
+        "employee_type": employee_type,
+        "fradato": fradato,
+        "tildato": tildato,
+        "employee_count": employee_count,
+        "row_count": row_count,
+        "csv_content": csv_content,
+    }).execute()
+    if not result.data:
+        raise HTTPException(status_code=500, detail="Failed to save run log.")
+    return {"id": result.data[0]["id"]}
+
+
+@router.get("/run-log")
+def get_run_log():
+    """Return all run_log rows ordered by created_at desc (without csv_content)."""
+    db = get_db()
+    result = db.table("run_log") \
+        .select("id, created_at, employee_type, fradato, tildato, employee_count, row_count") \
+        .order("created_at", desc=True) \
+        .execute()
+    return result.data
+
+
+@router.get("/run-log/{run_id}/download")
+def download_run_log(run_id: str):
+    """Download the CSV for a specific run_log entry."""
+    db = get_db()
+    result = db.table("run_log").select("csv_content").eq("id", run_id).single().execute()
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Run not found.")
+    csv_content = result.data["csv_content"]
+    return StreamingResponse(
+        iter([csv_content.encode("utf-8")]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=run_{run_id}.csv"}
     )
 
 
