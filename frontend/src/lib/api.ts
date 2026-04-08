@@ -138,3 +138,50 @@ export async function saveManualMapping(name: string, lonnstakernr: string) {
   const params = new URLSearchParams({ name, lonnstakernr });
   await request(`/api/process/manual-mapping?${params}`, { method: "POST" });
 }
+
+// -- Run log --
+
+export type RunLogEntry = {
+  id: number;
+  created_at: string;
+  employee_type: string;
+  fradato: string;
+  tildato: string;
+  employee_count: number;
+  row_count: number;
+};
+
+export async function saveRun(
+  employeeType: string,
+  fradato: string,
+  tildato: string,
+  employeeCount: number,
+  rowCount: number,
+  csvContent: string
+): Promise<{ id: number }> {
+  const params = new URLSearchParams({
+    employee_type: employeeType, fradato, tildato,
+    employee_count: String(employeeCount), row_count: String(rowCount)
+  });
+  const res = await request(`/api/process/save-run?${params}`, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: csvContent,
+  });
+  return res.json();
+}
+
+export async function getRunLog(): Promise<RunLogEntry[]> {
+  const res = await request("/api/process/run-log");
+  return res.json();
+}
+
+export async function downloadPreviousRun(id: number): Promise<Blob> {
+  const res = await request(`/api/process/run-log/${id}/download`);
+  return res.blob();
+}
+
+export async function searchEmployers(q: string) {
+  const res = await request(`/api/employer/search?q=${encodeURIComponent(q)}`);
+  return res.json() as Promise<{ normalized_name: string; lonnstakernr: string }[]>;
+}
